@@ -1,0 +1,6 @@
+nodes,gpus,tp,cp,minibs,gbs,score_min,train_throughput_samples_per_s,converged_samples_range,source
+1,4,4,1,8,8,64.726,0.888,3072,mlcommons/training_results_v6.0 Krai Isambard-AI-Phase2-GH200-96GB_n1_v6.0
+2,8,4,1,4,8,31.375,1.775,2688-3072,mlcommons/training_results_v6.0 Krai Isambard-AI-Phase2-GH200-96GB_n2_v6.0
+4,16,4,1,2,8,17.162,3.479,3072-3456,mlcommons/training_results_v6.0 Krai Isambard-AI-Phase2-GH200-96GB_n4_v6.0
+8,32,4,1,1,8,9.097,6.775,3072-3456,mlcommons/training_results_v6.0 Krai Isambard-AI-Phase2-GH200-96GB_n8_v6.0
+16,64,4,2,1,16,5.933,12.930,3456-5376,mlcommons/training_results_v6.0 Krai Isambard-AI-Phase2-GH200-96GB_n16_v6.0

@@ -1,0 +1,12 @@
+# Upstream sources (fetched by scripts/00_fetch_sources.sh)
+third_party/
+# Host Slingshot libraries collected at run time
+hostlibs/
+# Job outputs and logs
+results/runs/*
+!results/runs/.gitkeep
+results/*.log
+# Data and containers never belong in git
+*.sqsh
+*.npy
+__pycache__/
