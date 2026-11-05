@@ -1,11 +1,15 @@
-# Upstream sources (fetched by scripts/00_fetch_sources.sh)
+# Upstream sources and files copied from them (scripts/00_fetch_sources.sh)
 third_party/
+configs/config_gh200.sh
+configs/config_common.sh
 # Host Slingshot libraries collected at run time
 hostlibs/
-# Job outputs and logs
+# Job outputs, series bookkeeping, submission trees
 results/runs/*
 !results/runs/.gitkeep
+results/series-*
 results/*.log
+submission/
 # Data and containers never belong in git
 *.sqsh
 *.npy

@@ -1,0 +1,2 @@
+nodes,config,cp,cp_comm,gbs,runs,olympic_mean_min,rcp_normalization,score_min,converged_samples,note
+32,config_hangang_n32_tp4pp1cp4.sh,4,p2p,8,10,4.319,1.0000,4.319,"3072 x4, 3456 x3, 3840 x3","~15 samples/s; slower convergence than CP1/CP2 at GBS 8; 5 runs in one Dragonfly group (--switches=1) gave no throughput gain"

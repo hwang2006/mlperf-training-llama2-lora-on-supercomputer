@@ -26,3 +26,8 @@ fi
 
 echo "== NVIDIA v5.0 implementation";  ls "$NV_IMPL"
 echo "== KRAI v6.0 implementations";   ls "$KRAI_IMPL" | grep Isambard
+
+# Krai's shared config files, sourced by the Hangang 32/64-node configs in configs/
+KN16=$KRAI_IMPL/Isambard-AI-Phase2-GH200-96GB_n16_v6.0
+cp "$KN16/config_gh200.sh" "$KN16/config_common.sh" "$CONFIGS/"
+echo "== configs"; ls "$CONFIGS"

@@ -19,7 +19,7 @@ export ENROOT_TEMP_PATH=$ENROOT_LOCAL/enroot-tmp
 export ENROOT_DATA_PATH=$ENROOT_LOCAL/enroot-data
 export ENROOT_RUNTIME_PATH=$ENROOT_LOCAL/enroot-run
 export ENROOT_MAX_PROCESSORS=8
-mkdir -p "$ENROOT_TEMP_PATH" "$ENROOT_DATA_PATH" "$ENROOT_RUNTIME_PATH" "$DATADIR" "$MODEL" "$DATA_ROOT/.hf"
+mkdir -p "$ENROOT_TEMP_PATH" "$ENROOT_DATA_PATH" "$ENROOT_RUNTIME_PATH" "$DATADIR" "$MODEL" "$DATA_BASE/.hf"
 
 NAME=kv6-data
 enroot remove -f "$NAME" 2>/dev/null || true
@@ -27,7 +27,7 @@ enroot create -n "$NAME" "$IMG"
 enroot start \
   --mount "$DATADIR:/data/gov_report" \
   --mount "$MODEL:/data/model" \
-  --mount "$DATA_ROOT/.hf:/hf" \
+  --mount "$DATA_BASE/.hf:/hf" \
   "$NAME" bash -c '
     set -ex
     export HF_HOME=/hf

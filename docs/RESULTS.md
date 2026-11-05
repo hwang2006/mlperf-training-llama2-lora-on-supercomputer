@@ -1,103 +1,114 @@
 # Results
 
-All Hangang numbers are **single runs** measured between Oct 31 and Nov 1, 2026.
-KRAI numbers are the official MLPerf Training v6.0 scores recomputed from the published logs
-with `tools/krai_baseline.py` (10 runs, fastest and slowest dropped, mean of 8).
-Raw data: [`results/hangang_runs.csv`](../results/hangang_runs.csv),
+Measured on KISTI Hangang between October 31 and November 6, 2026.
+Data: [`results/official_rehearsal.csv`](../results/official_rehearsal.csv),
+[`results/exploration_runs.csv`](../results/exploration_runs.csv),
 [`results/krai_isambard_baseline.csv`](../results/krai_isambard_baseline.csv).
 
-## 1. Best configuration per scale
+## 1. Official-submission rehearsal (10 runs per scale, v6.1 package checker)
 
-| Nodes | GPUs | TP | CP | MINIBS | GBS | Converged at (samples) | TTQ (min) | Speedup vs 1 node | Efficiency |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 4 | 4 | 1 | 8 | 8 | 3072 | 61.856 | 1.00x | - |
-| 2 | 8 | 4 | 1 | 4 | 8 | 3072 | 31.143 | 1.99x | 99.3% |
-| 4 | 16 | 4 | 1 | 2 | 8 | 3072 | 15.800 | 3.92x | 97.9% |
-| 8 | 32 | 4 | 1 | 1 | 8 | 3072 | 8.298 | 7.45x | 93.2% |
-| 16 | 64 | 4 | 2 | 1 | 8 | 3072 | 5.415 | 11.42x | 71.4% |
-| 32 | 128 | 4 | 2 | 1 | 16 | 3840 | 3.746 | 16.51x | 51.6% |
-| 64 | 256 | 4 | 2 | 1 | 32 | 4992 | 2.445 | 25.30x | 39.5% |
+Score = mean TTQ without the fastest and slowest run x RCP normalization (`scaling.json`
+written by the package checker). All seven scales: `PACKAGE CHECKER FOUND NO ERRORS`.
 
-All runs: LR 0.00055, MAX_STEPS 800 (cosine schedule length), FP8, CUDA graphs on,
-TP communication overlap off, NCCL over Slingshot CXI (from 2 nodes).
+| Nodes | GPUs | TP | CP | GBS | LR / steps | Min TTQ | Olympic mean | RCP norm. | **Score** | Non-conv. |
+|---:|---:|---:|---|---:|---|---:|---:|---:|---:|---:|
+| 1 | 4 | 4 | 1 | 8 | 0.00055 / 800 | 53.772 | 62.164 | 1.0347 | **64.323** | 0 |
+| 2 | 8 | 4 | 1 | 8 | 0.00055 / 800 | 31.143 | 31.426 | 1.0347 | **32.517** | 0 |
+| 4 | 16 | 4 | 1 | 8 | 0.00055 / 800 | 13.798 | 15.701 | 1.0511 | **16.504** | 0 |
+| 8 | 32 | 4 | 1 | 8 | 0.00055 / 800 | 8.295 | 8.370 | 1.0347 | **8.660** | 0 |
+| 16 | 64 | 4 | 2 a2a | 8 | 0.00055 / 800 | 5.419 | 5.830 | 1.0034 | **5.850** | 1 |
+| 32 | 128 | 4 | 2 a2a | 16 | 0.00055 / 800 | 3.196 | 3.734 | 1.0500 | **3.921** | 1 |
+| 64 | 256 | 4 | 2 a2a | 32 | 0.0003 / 1024 | 3.070 | 3.434 | 1.0000 | **3.434** | 0 |
 
-<p align="center"><img src="figures/scaling.png" width="650"></p>
+Times in minutes. Each run is a separate Slurm job with a distinct seed; job IDs are in the CSV.
 
-The dotted line ("throughput speedup") multiplies the TTQ speedup by the extra samples
-needed at larger GBS (3840/3072 at 32 nodes, 4992/3072 at 64 nodes). The gap between the
-two blue lines is the convergence cost of a larger global batch.
+### Comparison with KRAI (official MLPerf Training v6.0 scores)
 
-Training throughput (excluding evaluation): 0.931 samples/s on 1 node,
-1.858 on 2 nodes, ~20.1 on 32 nodes, 40.4 on 64 nodes.
+| Nodes | KRAI olympic | KRAI norm. | KRAI score | Hangang score | Hangang vs KRAI | Hangang eff. | KRAI eff. |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 64.726 | 1.0347 | 66.973 | 64.323 | 4.0% faster | - | - |
+| 2 | 31.375 | 1.0681 | 33.512 | 32.517 | 3.0% faster | 98.9% | 99.9% |
+| 4 | 17.162 | 1.0034 | 17.220 | 16.504 | 4.2% faster | 97.4% | 97.2% |
+| 8 | 9.097 | 1.0000 | 9.097 | 8.660 | 4.8% faster | 92.8% | 92.0% |
+| 16 | 5.933 | 1.0000 | 5.933 (GBS 16) | 5.850 (GBS 8) | 1.4% faster | 68.7% | 70.6% |
+| 32 | - | - | - | 3.921 | - | 51.3% | - |
+| 64 | - | - | - | 3.434 | - | 29.3% | - |
 
-## 2. Comparison with KRAI (Isambard-AI)
+Efficiency = (1-node score / N-node score) / N. KRAI's scores were recomputed from the published
+logs with `tools/krai_baseline.py` and the same package checker; they match KRAI's published values.
 
-| Nodes | KRAI GBS | KRAI score (min) | KRAI throughput | KRAI efficiency | Hangang TTQ (min) | Hangang efficiency |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 8 | 64.726 | 0.888 | - | 61.856 | - |
-| 2 | 8 | 31.375 | 1.775 | 103.2%* | 31.143 | 99.3% |
-| 4 | 8 | 17.162 | 3.479 | 94.3% | 15.800 | 97.9% |
-| 8 | 8 | 9.097 | 6.775 | 88.9% | 8.298 | 93.2% |
-| 16 | 16 | 5.933 | 12.930 | 68.2% | 5.415 (GBS 8) | 71.4% |
+Interpretation:
 
-\* 3 of KRAI's 10 runs converged early (2688 samples).
+* Both systems scale almost identically on official-style scores. Hangang's advantage is a roughly
+  constant ~4% per-node speed; both systems have GH200 with 96 GB HBM3, and the most likely cause
+  is the power limit (900 W per GH200 on liquid-cooled Hangang, 660 W shared CPU+GPU cap on
+  air-cooled Isambard-AI). This was not measured directly.
+* Earlier single-run comparisons suggested Hangang scales better than KRAI at 4-16 nodes; with 10
+  runs and RCP normalization that difference disappears.
 
-Notes:
+### Runs per scale (TTQ in minutes; `-` = not inspected individually)
 
-* The 1-node gap (~4-5% in throughput) is consistent with the 120 GB GH200 variant's higher
-  HBM bandwidth. The gap grows with node count (8-9% at 4-16 nodes).
-* **16 nodes:** KRAI's published config (`MINIBS=1`, `CP=2`) yields GBS 8 with the
-  NVIDIA v5.0 formula `GBS = MINIBS * (GPUs / (TP*PP)) / CP`, but KRAI's logs report GBS 16.
-  Hangang used the published files and got GBS 8. For a like-for-like comparison at
-  GBS 16, see run E2 below (7.022 min, single run; KRAI's GBS 16 runs vary from 3456 to 5376
-  samples).
-* KRAI's NCCL transport on Isambard-AI cannot be determined from the public logs.
+| Nodes | TTQ of each run | Notes |
+|---:|---|---|
+| 1 | 62.017, 62.375, 53.772, 62.378, 70.119, 62.230, 62.291, 62.517, 61.583, 61.922 | one early (2688 samples) and one late (3456) convergence |
+| 2 | 31.143, 31.510, 31.534, 31.503, 31.149, 31.291, 31.644, 31.390, 35.259, 31.389 | 35.259: converged at 3456 samples (throughput normal) |
+| 4 | 15.890, 15.852, 14.194, 15.920, 13.798, -, -, -, -, - (max 16.397) | two runs at 2688 samples |
+| 8 | 8.295, 8.305, 8.308, 8.359, 8.306, -, -, -, -, - (max 9.458) | |
+| 16 | NaN, 6.262, 5.419, 6.303, 5.522, 5.501, 5.618, 5.755, 5.554, 6.124 | NaN run used node1000-1007 |
+| 32 | 3.636, 3.196, 3.842, 3.270, 3.697, 4.112, 3.593, NaN, 3.823, 3.898 | NaN run used node1000-1007 |
+| 64 | 3.475, 3.278, 3.070, 3.261, 3.544, -, -, -, -, - (max 3.979) | 6144-6912 samples in inspected runs |
 
-## 3. All runs
+### Non-converged runs and node1000-1007
 
-| Job | Nodes | Config | GBS | Net | Result |
-|---|---:|---|---:|---|---|
-| 1192108 | 1 | TP4 MINIBS8 | 8 | - | 61.856 min, 3072 samples |
-| 1192315 | 2 | TP4 MINIBS4 | 8 | A (TCP) | 31.557 min, 3072 |
-| 1192316 | 2 | TP4 MINIBS4 | 8 | C (CXI) | 31.143 min, 3072 |
-| 1192544 | 4 | TP4 MINIBS2 | 8 | C | 15.800 min, 3072 |
-| 1192539 | 8 | TP4 MINIBS1 | 8 | C | 8.298 min, 3072 |
-| 1192541 | 16 | TP4 CP2 MINIBS1 | 8 | C | **5.415 min**, 3072 |
-| 1192728 | 16 | TP4 CP2 MINIBS2 (E2) | 16 | C | 7.022 min, 4224 |
-| 1192823 | 16 | TP4 CP1 MINIBS1 (E1) | 16 | C | 5.780 min, 4224 |
-| 1192909 | 32 | TP4 CP2 MINIBS1 | 16 | C | **3.746 min**, 3840 |
-| 1192835 | 32 | TP4 CP4 (a2a) MINIBS1 | 8 | C | failed: heads not divisible by CP |
-| 1193001 | 64 | TP4 CP2 MINIBS1 | 32 | C | hang before warmup (shared Triton cache) |
-| 1193066 | 64 | TP4 CP2 MINIBS1 | 32 | C | **2.445 min**, 4992 |
+Two runs (32 nodes, job 1221790; 16 nodes, job 1221926) produced `NaN` training loss from the
+**first** logged step, and every evaluation was `NaN`; both ended `aborted` at max steps. No Xid
+or CUDA errors appeared in the job output. The nodes common to both jobs that were never used by
+any of the successful jobs (598 distinct nodes) are node1000-1007. A user-level GEMM check
+(`tools/gpu_check.py`, FP32/BF16) on these nodes passed, so the fault is not reproducible with
+plain GEMMs; the nodes are excluded (`EXCLUDE_NODES`) and should be reported to KISTI for DCGM
+diagnostics. Per the rules, each failed run stays in its set and is scored as the slowest run.
 
-### Evaluation loss curves (target 0.925)
+## 2. Configuration studies
 
-| Samples | n1 | n2 C | n4 | n8 | n16 GBS8 | n16 E2 GBS16 | n16 E1 GBS16 | n32 GBS16 | n64 GBS32 |
-|---:|---|---|---|---|---|---|---|---|---|
-| 1536 | 0.9367 | 0.9393 | 0.9389 | 0.9383 | 0.9381 | | | | |
-| 1920 | 0.9334 | 0.9344 | 0.9361 | 0.9352 | 0.9368 | 0.9385 | 0.9457 | 0.9431 | |
-| 2304 | 0.9351 | 0.9282 | 0.9296 | 0.9335 | 0.9298 | 0.9324 | 0.9372 | 0.9329 | |
-| 2688 | 0.9265 | 0.9259 | 0.9259 | 0.9302 | 0.9272 | 0.9325 | 0.9343 | 0.9288 | 0.9395 |
-| 3072 | **0.9223** | **0.9227** | **0.9233** | **0.9234** | **0.9223** | 0.9277 | 0.9317 | 0.9309 | 0.9363 |
-| 3456 | | | | | | 0.9256 | 0.9288 | 0.9266 | 0.9317 |
-| 3840 | | | | | | 0.9252 | 0.9264 | **0.9240** | 0.9297 |
-| 4224 | | | | | | **0.9222** | **0.9245** | | 0.9262 |
-| 4608 | | | | | | | | | 0.9267 |
-| 4992 | | | | | | | | | **0.9237** |
+### 16 nodes (single runs)
 
-## 4. 16-node design study
-
-| Run | CP | MINIBS | GBS | Samples | Avg throughput incl. eval | TTQ |
+| Run | CP | MINIBS | GBS | Samples | Avg. throughput incl. eval | TTQ |
 |---|---:|---:|---:|---:|---:|---:|
-| baseline | 2 | 1 | 8 | 3072 | 9.46 | **5.415** |
+| Krai config | 2 | 1 | 8 | 3072 | 9.46 | **5.415** |
 | E1 | 1 | 1 | 16 | 4224 | 12.38 | 5.780 |
 | E2 | 2 | 2 | 16 | 4224 | 10.03 | 7.022 |
 
-* Same GBS (E1 vs E2): dropping inter-node CP raises throughput by ~21-24%.
-* Same CP (baseline vs E2): GBS 16 needs 37.5% more samples at LR 0.00055.
-* Net effect at 16 nodes: keeping GBS 8 is best.
+Dropping inter-node CP raises throughput by about 21-24%, but GBS 16 needs about 37.5% more
+samples at LR 0.00055. Keeping GBS 8 is best at 16 nodes.
 
-## 5. NCCL transport test (2 nodes, 8 GPUs, all-reduce bus bandwidth)
+### 32 nodes: CP2 `a2a` vs CP4 `p2p` (10 runs each)
+
+| Config | GBS | Train throughput | Converged samples | RCP norm. | Score |
+|---|---:|---:|---|---:|---:|
+| **CP2 `a2a`** | 16 | ~19.5 samples/s | 3456-4224 (one NaN run) | 1.0500 | **3.921** |
+| CP4 `p2p` | 8 | ~15 samples/s | 3072 x4, 3456 x3, 3840 x3 | 1.0000 | 4.319 |
+
+CP4 needs `p2p` (`a2a` fails: "number of attention heads needs to be divisible by CP size",
+because TP=4 leaves 2 KV heads per GPU). `p2p` converged later than every other GBS 8
+configuration (30 runs at 1-8 nodes mostly at 3072 samples), so it receives no RCP
+normalization benefit. Five of the CP4 runs were placed in a single Dragonfly group with
+`--switches=1`; throughput did not improve (14.87 vs 15.13 samples/s scattered).
+
+### 64 nodes: GBS, CP and learning rate (single runs)
+
+| Config | GBS | LR / steps | Samples | Train throughput | TTQ | RCP (limit 5802 at GBS 32) |
+|---|---:|---|---:|---:|---:|---|
+| CP2 `a2a` | 32 | 0.00055 / 800 | 4992 | 40.4 | 2.445 | **fails** (too fast) |
+| CP2 `a2a` | 32 | 0.0004 / 1024 | 5376 | 33.0 | 4.005 | fails |
+| **CP2 `a2a`** | 32 | **0.0003 / 1024** | 6144 | 36.8 | 3.217 | **passes** |
+| CP4 `p2p` | 16 | 0.00055 / 800 | 4224 | 22.6 | 4.278 | passes |
+
+The single-run 2.445 min shown in earlier versions of this repository is not a valid MLPerf
+score: its convergence is below the RCP lower limit. Throughput at 64 nodes varied between 33 and
+40 samples/s across runs with the same configuration; Slurm's `--switches` (Hangang caps the wait
+at 5 minutes) did not reliably keep 64 nodes in one 104-node Dragonfly group.
+
+## 3. NCCL transport (2 nodes, 8 GPUs, all-reduce bus bandwidth)
 
 | Mode | 1 MB | 16 MB | 128 MB | 512 MB | NCCL network |
 |---|---:|---:|---:|---:|---|
@@ -105,12 +116,13 @@ Notes:
 | B: socket on `hsn*` only | 1.13 | 11.24 | 13.59 | 13.21 GB/s | Socket (`hsn0-3`) |
 | C: host Cray libfabric | **5.90** | **74.97** | **156.03** | **178.61 GB/s** | AWS Libfabric, provider `cxi`, 4 NICs |
 
-Despite the ~15x bandwidth gap, 2-node TTQ was 31.557 min (A) vs 31.143 min (C): with TP
-inside the node, only small LoRA gradients and FP8 amax reductions cross nodes.
+Despite the ~15x bandwidth gap, 2-node TTQ was 31.557 min (A) vs 31.143 min (C): with TP inside
+the node only small LoRA gradients and FP8 amax reductions cross nodes. All multi-node results
+above use C.
 
-## 6. Earlier home-built container (for reference)
+## 4. Earlier home-built container
 
 | Config | 1 node | 2 nodes |
 |---|---:|---:|
 | Custom NeMo/Megatron FP8 container, TP overlap off | 72.530 min | 133.213 min (inverse scaling) |
-| This repo (NVIDIA v5.0 recipe + KRAI configs) | 61.856 min | 31.143 min |
+| This repo (NVIDIA v5.0 recipe + KRAI configs), single runs | 61.856 min | 31.143 min |
